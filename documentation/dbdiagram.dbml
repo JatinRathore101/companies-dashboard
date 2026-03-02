@@ -1,0 +1,30 @@
+Table companies_metadata {
+  domain varchar(255) [pk, note: "Unique web domain of company acting as the primary identifier"]
+  name varchar(255) [note: "Name of the company"]
+  category varchar(255) [note: "Industry vertical (e.g., SaaS, Manufacturing)"]
+  city varchar(255)
+  state varchar(255)
+  country varchar(255)
+  zipcode varchar(255)
+  
+  Indexes {
+    category
+    country
+  }
+
+  Note: "Master table for company-level information"
+}
+
+Table companies_techdata {
+  name varchar(255) [pk, note: "Name of the technology or tool (e.g., 'React', 'AWS')"]
+  category varchar(255) [note: "Type of tech (e.g., 'Frontend Framework', 'Cloud Provider')"]
+  domain varchar(255) [pk, not null, note: "Foreign key linking back to the companies_metadata table"]
+  
+  Indexes {
+    domain
+  }
+
+  Note: "Transactional table tracking tech stacks per company domain, uses name and domain as composite primary key"
+}
+
+Ref: companies_techdata.domain > companies_metadata.domain [update: cascade, delete: cascade]
