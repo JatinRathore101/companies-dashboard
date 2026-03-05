@@ -1,103 +1,174 @@
-import Image from "next/image";
+"use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { useMediaQuery } from "@mui/material";
+
+import { DataTable, type ColumnDef } from "@/components/DataTable";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { LayoutWrapper } from "@/components/LayoutWrapper";
+import { PageHeader } from "@/components/PageHeader";
+import { QueryInput } from "@/components/QueryInput";
+import { SchemaHint } from "@/components/SchemaHint";
+import type { ApiResponse } from "@/types/api";
+
+const DEFAULT_QUERY = "SELECT * FROM companies_metadata";
+const ROW_CAP = 500;
+const DEFAULT_ROWS_PER_PAGE = 25;
+
+/**
+ * Derives DataTable column definitions from the keys of a result row.
+ * Header labels are humanised: underscores become spaces, text uppercased.
+ */
+function buildColumns(row: Record<string, unknown>): ColumnDef[] {
+  return Object.keys(row).map((key) => ({
+    Header: key.replace(/_/g, " ").toUpperCase(),
+    accessor: key,
+  }));
+}
+
+/**
+ * Company Data Explorer page.
+ *
+ * Owns all application state including pagination. On every page change the
+ * same SQL is re-submitted with updated skip/limit query params so the API
+ * returns only the rows needed for that page.
+ */
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
+  const [mode, setMode] = useState<"light" | "dark">(
+    prefersDark ? "dark" : "light",
+  );
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const [sql, setSql] = useState<string>(DEFAULT_QUERY);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [data, setData] = useState<Record<string, unknown>[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState<number>(0);
+  const [hasQueried, setHasQueried] = useState<boolean>(false);
+
+  // ── Pagination state ──────────────────────────────────────────────────────
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(DEFAULT_ROWS_PER_PAGE);
+
+  // Derive columns from the first data row whenever data changes.
+  const columns = useMemo<ColumnDef[]>(
+    () => (data.length > 0 ? buildColumns(data[0]) : []),
+    [data],
+  );
+
+  /**
+   * Fetches a single page of query results from GET /api/query.
+   * Sends `skip` and `limit` so the API returns only the needed rows.
+   *
+   * @param queryToRun - The SQL string to execute.
+   * @param skip       - Row offset for the current page.
+   * @param limit      - Number of rows to fetch.
+   */
+  const runQuery = useCallback(
+    async (queryToRun: string, skip: number, limit: number) => {
+      const trimmed = queryToRun.trim();
+      if (!trimmed) return;
+
+      setLoading(true);
+      setError(null);
+      setHasQueried(true);
+
+      try {
+        const params = new URLSearchParams({
+          q: trimmed,
+          skip: String(skip),
+          limit: String(limit),
+        });
+        const res = await fetch(`/api/query?${params.toString()}`);
+        const json = (await res.json()) as ApiResponse;
+
+        if (!json.success || !json.data) {
+          setError(json.error ?? "An unknown error occurred.");
+          setData([]);
+          setTotal(0);
+        } else {
+          setData(json.data);
+          setTotal(json.total ?? json.data.length);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Network error");
+        setData([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Run query on mount with the default SQL and initial page.
+  useEffect(() => {
+    void runQuery(DEFAULT_QUERY, 0, DEFAULT_ROWS_PER_PAGE);
+  }, [runQuery]);
+
+  // ── Pagination handlers ───────────────────────────────────────────────────
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setPage(newPage);
+      void runQuery(sql, newPage * rowsPerPage, rowsPerPage);
+    },
+    [runQuery, sql, rowsPerPage],
+  );
+
+  const handleRowsPerPageChange = useCallback(
+    (newRowsPerPage: number) => {
+      // Reset to page 0 when page size changes.
+      setPage(0);
+      setRowsPerPage(newRowsPerPage);
+      void runQuery(sql, 0, newRowsPerPage);
+    },
+    [runQuery, sql],
+  );
+
+  // ── "Run Query" button handler ────────────────────────────────────────────
+  // Always resets to page 0 so results are shown from the top.
+  const handleRunQuery = useCallback(() => {
+    setPage(0);
+    void runQuery(sql, 0, rowsPerPage);
+  }, [runQuery, sql, rowsPerPage]);
+
+  return (
+    <LayoutWrapper mode={mode}>
+      <PageHeader
+        mode={mode}
+        onToggleMode={() => setMode((m) => (m === "dark" ? "light" : "dark"))}
+        rowCap={ROW_CAP}
+      />
+      <QueryInput
+        value={sql}
+        onChange={setSql}
+        onRun={handleRunQuery}
+        loading={loading}
+        rowCount={total}
+        rowCap={ROW_CAP}
+      />
+      {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
+
+      {hasQueried && (
+        <DataTable
+          columns={columns}
+          data={data}
+          loading={loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRecords={total}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          noDataMessage={
+            error ? "" : "Query returned no results."
+          }
+        />
+      )}
+
+      <SchemaHint />
+    </LayoutWrapper>
   );
 }
