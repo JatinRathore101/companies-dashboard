@@ -2,19 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useMediaQuery } from "@mui/material";
-
 import { DataTable, type ColumnDef } from "@/components/DataTable";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryInput } from "@/components/QueryInput";
-import { SchemaHint } from "@/components/SchemaHint";
 import type { ApiResponse } from "@/types/api";
+import type { OptionsResponse } from "@/app/api/options/route";
 
 const DEFAULT_QUERY = "SELECT * FROM companies_metadata";
-const ROW_CAP = 500;
-const DEFAULT_ROWS_PER_PAGE = 25;
+const DEFAULT_ROWS_PER_PAGE = 10;
 
 /**
  * Derives DataTable column definitions from the keys of a result row.
@@ -35,10 +32,7 @@ function buildColumns(row: Record<string, unknown>): ColumnDef[] {
  * returns only the rows needed for that page.
  */
 export default function Home() {
-  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
-  const [mode, setMode] = useState<"light" | "dark">(
-    prefersDark ? "dark" : "light",
-  );
+  const [mode, setMode] = useState<"light" | "dark">("dark");
 
   const [sql, setSql] = useState<string>(DEFAULT_QUERY);
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,6 +40,17 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState<number>(0);
   const [hasQueried, setHasQueried] = useState<boolean>(false);
+  const [options, setOptions] = useState<OptionsResponse | null>(null);
+
+  // Fetch unique filter values once on mount.
+  useEffect(() => {
+    fetch("/api/options")
+      .then((res) => res.json())
+      .then((data: OptionsResponse) => setOptions(data))
+      .catch(() => {
+        /* non-critical, silently ignore */
+      });
+  }, []);
 
   // ── Pagination state ──────────────────────────────────────────────────────
   const [page, setPage] = useState<number>(0);
@@ -139,7 +144,6 @@ export default function Home() {
       <PageHeader
         mode={mode}
         onToggleMode={() => setMode((m) => (m === "dark" ? "light" : "dark"))}
-        rowCap={ROW_CAP}
       />
       <QueryInput
         value={sql}
@@ -147,7 +151,6 @@ export default function Home() {
         onRun={handleRunQuery}
         loading={loading}
         rowCount={total}
-        rowCap={ROW_CAP}
       />
       {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
 
@@ -162,13 +165,9 @@ export default function Home() {
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
           rowsPerPageOptions={[10, 25, 50, 100]}
-          noDataMessage={
-            error ? "" : "Query returned no results."
-          }
+          noDataMessage={error ? "" : "Query returned no results."}
         />
       )}
-
-      <SchemaHint />
     </LayoutWrapper>
   );
 }

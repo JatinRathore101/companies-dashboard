@@ -33,26 +33,6 @@ if (!globalThis.__db) {
 
 const db: Database.Database = globalThis.__db;
 
-// ---------------------------------------------------------------------------
-// Security constants
-// ---------------------------------------------------------------------------
-
-/**
- * Keywords that must never appear in user-submitted queries.
- * Defense-in-depth: the SELECT-only check already blocks most of these,
- * but an explicit blocklist catches creative bypass attempts.
- */
-const FORBIDDEN_KEYWORDS = [
-  "INSERT",
-  "UPDATE",
-  "DELETE",
-  "DROP",
-  "ALTER",
-  "PRAGMA",
-  "ATTACH",
-  "DETACH",
-] as const;
-
 /** Hard cap on rows returned — prevents memory exhaustion. */
 const MAX_ROWS = 500;
 
@@ -112,22 +92,14 @@ export function executeQuery(
     return { success: false, error: "Only SELECT queries are allowed." };
   }
 
-  // --- Rule 2: Forbidden keyword scan (word-boundary, case-insensitive) ---
-  for (const keyword of FORBIDDEN_KEYWORDS) {
-    if (new RegExp(`\\b${keyword}\\b`, "i").test(trimmed)) {
-      return {
-        success: false,
-        error: `Query contains forbidden keyword: ${keyword}`,
-      };
-    }
-  }
-
   // --- Rule 3: Multi-statement detection ---
   // Strip single-quoted string literals to avoid false positives on
   // semicolons that appear inside string values, then check if a
   // semicolon remains anywhere other than a trailing position.
   const sqlWithoutStrings = trimmed.replace(/'[^']*'/g, "''");
-  const withoutTrailingSemicolon = sqlWithoutStrings.trimEnd().replace(/;$/, "");
+  const withoutTrailingSemicolon = sqlWithoutStrings
+    .trimEnd()
+    .replace(/;$/, "");
   if (withoutTrailingSemicolon.includes(";")) {
     return {
       success: false,
@@ -143,7 +115,10 @@ export function executeQuery(
     if (pagination) {
       // Clamp skip/limit to safe integer bounds before interpolation.
       const skip = Math.max(0, Math.floor(pagination.skip));
-      const limit = Math.min(Math.max(1, Math.floor(pagination.limit)), MAX_ROWS);
+      const limit = Math.min(
+        Math.max(1, Math.floor(pagination.limit)),
+        MAX_ROWS,
+      );
 
       // COUNT query — wraps user's query so ORDER BY / LIMIT in user SQL
       // are respected when computing the page total.

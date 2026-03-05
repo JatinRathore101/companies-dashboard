@@ -1,14 +1,7 @@
 "use client";
 
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, CircularProgress, TextField } from "@mui/material";
 
 interface QueryInputProps {
   value: string;
@@ -16,7 +9,6 @@ interface QueryInputProps {
   onRun: () => void;
   loading: boolean;
   rowCount: number | null;
-  rowCap: number;
 }
 
 /**
@@ -28,7 +20,6 @@ interface QueryInputProps {
  * @param props.onRun    - Called when the user submits the query.
  * @param props.loading  - When true, disables the button and shows a spinner.
  * @param props.rowCount - Number of rows returned by the last query, or null.
- * @param props.rowCap   - Maximum rows the API will return; triggers a warning chip when hit.
  */
 export function QueryInput({
   value,
@@ -36,7 +27,6 @@ export function QueryInput({
   onRun,
   loading,
   rowCount,
-  rowCap,
 }: QueryInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") onRun();
@@ -77,22 +67,6 @@ export function QueryInput({
         >
           {loading ? "Running…" : "Run Query"}
         </Button>
-
-        {rowCount !== null && !loading && (
-          <Chip
-            label={`${rowCount.toLocaleString()} row${rowCount !== 1 ? "s" : ""} returned`}
-            color={rowCount === rowCap ? "warning" : "success"}
-            variant="outlined"
-            size="small"
-          />
-        )}
-
-        {rowCount === rowCap && !loading && (
-          <Typography variant="caption" color="warning.main">
-            Result capped at {rowCap} rows — add a LIMIT clause for more
-            control.
-          </Typography>
-        )}
       </Box>
     </Box>
   );
