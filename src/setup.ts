@@ -23,11 +23,15 @@ const writeToFile = (content: unknown, outputPath: string): void => {
 /**
  * Converts NDJSON (newline separated JSON)
  * into a parsed JSON array safely.
+ *
+ * Logs a [PARSE ERROR] for every malformed line so broken records can be
+ * identified without halting the entire import.
  */
 const ndJsonToSafeJson = <T = any>(content: string): T[] => {
   let lineNumber = 0;
+  let skipped = 0;
 
-  return content
+  const result = content
     ?.split("\n")
     ?.map((line) => {
       lineNumber++;
@@ -36,6 +40,7 @@ const ndJsonToSafeJson = <T = any>(content: string): T[] => {
       const j = line.lastIndexOf("}");
 
       if (i === -1 || j === -1 || j < i) {
+        skipped++;
         return null;
       }
 
@@ -45,15 +50,16 @@ const ndJsonToSafeJson = <T = any>(content: string): T[] => {
         return JSON5.parse(jsonLine) as T;
       } catch (error) {
         console.error(
-          "Invalid JSON in line:",
-          lineNumber,
-          " | ERROR ~ ",
-          error,
+          `[PARSE ERROR] Line ${lineNumber}: invalid JSON — ${error}`,
         );
+        skipped++;
         return false;
       }
     })
     ?.filter(Boolean) as T[];
+
+  console.log(`[PARSE]    ndJsonToSafeJson — ${lineNumber} lines read, ${skipped} skipped, ${result.length} parsed`);
+  return result;
 };
 
 /* ---------------- INTERFACES ---------------- */
@@ -97,15 +103,17 @@ interface TechDataOutput {
 /* ---------------- MAIN EXECUTION ---------------- */
 
 ((): void => {
+  console.log(`[SETUP START] Initialising database at: database.sqlite`);
+
   const dbPath = path.join(process.cwd(), "database.sqlite");
   const db = new Database(dbPath);
 
   db.pragma("foreign_keys = ON");
-
-  console.log("✅ Connected to SQLite");
+  console.log(`[DB]       Connected to SQLite — foreign_keys=ON`);
 
   try {
-    console.log("📖 Parsing tech index...");
+    /* -------- TECH INDEX -------- */
+    console.log(`[PARSE]    Reading tech index: src/sample-data/techIndex.sample.json`);
     const techToCategoryMapping: Record<string, string> = {};
     (
       JSON5.parse(
@@ -116,8 +124,10 @@ interface TechDataOutput {
         techToCategoryMapping[Name.toUpperCase().trim()] = Category.trim();
       }
     });
+    console.log(`[PARSE]    Tech index loaded — ${Object.keys(techToCategoryMapping).length} name→category mappings`);
 
-    console.log("📖 Parsing tech data...");
+    /* -------- TECH DATA -------- */
+    console.log(`[PARSE]    Reading tech data: src/sample-data/techData.sample.json (utf16le)`);
     let techData: TechDataOutput[] = [];
 
     ndJsonToSafeJson<TechDataInput>(
@@ -142,9 +152,10 @@ interface TechDataOutput {
     });
 
     // writeToFile(techData, "src/sample-data/techData.output.json");
-    console.log(`✅ Parsed ${techData.length} tech rows`);
+    console.log(`[PARSE]    Tech data processed — ${techData.length} tech rows across ${new Set(techData.map((r) => r.domain)).size} domains`);
 
-    console.log("📖 Parsing metadata...");
+    /* -------- METADATA -------- */
+    console.log(`[PARSE]    Reading metadata: src/sample-data/metaData.sample.json (utf16le)`);
 
     const metaDataDomainsMap: Record<string, boolean> = {};
 
@@ -172,32 +183,30 @@ interface TechDataOutput {
       })
       ?.filter((row): row is MetaDataOutput => Object.keys(row).length > 0);
 
+    let metaOnlyDomains = 0;
     techData?.forEach(({ domain }) => {
       if (!metaDataDomainsMap?.[domain]) {
         metaDataDomainsMap[domain] = true;
         metaData.push({ domain });
+        metaOnlyDomains++;
       }
     });
 
     // writeToFile(metaData, "src/sample-data/metaData.output.json");
-    console.log(`✅ Parsed ${metaData.length} metadata rows`);
+    console.log(`[PARSE]    Metadata processed — ${metaData.length} total rows (${metaOnlyDomains} tech-only domain stubs added)`);
 
-    /* ---------------- SINGLE ATOMIC TRANSACTION ---------------- */
-
-    console.log("🚀 Starting transaction...");
-
+    /* -------- TRANSACTION -------- */
+    console.log(`[DB]       Starting atomic transaction`);
     db.exec("BEGIN");
 
     try {
-      console.log("📦 Removing tables if found...");
-
+      console.log(`[DB]       Dropping existing tables (if any)`);
       db.exec(`
         DROP TABLE IF EXISTS companies_techdata;
         DROP TABLE IF EXISTS companies_metadata;
         `);
 
-      console.log("📦 Creating tables...");
-
+      console.log(`[DB]       Creating tables: companies_metadata, companies_techdata + indexes`);
       db.exec(`
         CREATE TABLE companies_metadata (
           domain TEXT PRIMARY KEY,
@@ -232,8 +241,10 @@ interface TechDataOutput {
           ON companies_techdata (domain);
 
         `);
+      console.log(`[DB]       Tables and indexes created`);
 
-      console.log("💾 Inserting metadata...");
+      /* -------- INSERT METADATA -------- */
+      console.log(`[DB]       Inserting ${metaData.length} metadata rows into companies_metadata`);
       const insertMeta = db.prepare(`
         INSERT INTO companies_metadata
         (domain, name, category, city, state, country, zipcode)
@@ -251,8 +262,10 @@ interface TechDataOutput {
           row.zipcode ?? null,
         );
       }
+      console.log(`[DB]       companies_metadata insert complete — ${metaData.length} rows`);
 
-      console.log("💾 Inserting tech data...");
+      /* -------- INSERT TECH DATA -------- */
+      console.log(`[DB]       Inserting ${techData.length} tech rows into companies_techdata`);
       const insertTech = db.prepare(`
         INSERT INTO companies_techdata
         (name, category, domain)
@@ -262,18 +275,27 @@ interface TechDataOutput {
       for (const row of techData) {
         insertTech.run(row.name, row.category ?? null, row.domain);
       }
+      console.log(`[DB]       companies_techdata insert complete — ${techData.length} rows`);
 
       db.exec("COMMIT");
-      console.log("🎉 Transaction committed successfully");
+      console.log(`[DB]       Transaction committed successfully`);
+      console.log(`[SETUP START] Setup complete — ${metaData.length} metadata rows, ${techData.length} tech rows`);
     } catch (err) {
-      console.error("❌ Error occurred, rolling back...");
+      console.error(`[ERROR]    Error during transaction — rolling back`);
+      if (err instanceof Error) {
+        console.error(`[ERROR]    ${err.message}`);
+        if (err.stack) console.error(`[ERROR]    Stack trace:\n${err.stack}`);
+      }
       db.exec("ROLLBACK");
       throw err;
     }
   } catch (error) {
-    console.error("❌ Setup failed:", error);
+    console.error(`[ERROR]    Setup failed:`, error);
+    if (error instanceof Error && error.stack) {
+      console.error(`[ERROR]    Stack trace:\n${error.stack}`);
+    }
   } finally {
     db.close();
-    console.log("🔒 Database connection closed");
+    console.log(`[DB]       Database connection closed`);
   }
 })();

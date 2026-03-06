@@ -8,7 +8,6 @@ interface QueryInputProps {
   onChange: (value: string) => void;
   onRun: () => void;
   loading: boolean;
-  rowCount: number | null;
 }
 
 /**
@@ -19,14 +18,12 @@ interface QueryInputProps {
  * @param props.onChange - Called with the updated string on every keystroke.
  * @param props.onRun    - Called when the user submits the query.
  * @param props.loading  - When true, disables the button and shows a spinner.
- * @param props.rowCount - Number of rows returned by the last query, or null.
  */
 export function QueryInput({
   value,
   onChange,
   onRun,
   loading,
-  rowCount,
 }: QueryInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") onRun();
