@@ -72,7 +72,7 @@ const ndJsonToSafeJson = <T = any>(content: string): T[] => {
       companyCategory: CAT?.trim(),
       city: C?.trim(),
       state: ST?.trim(),
-      country: CO?.trim(),
+      country: CO?.toUpperCase()?.trim(),
       zipcode: Z?.trim(),
     };
   });
