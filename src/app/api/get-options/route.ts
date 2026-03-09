@@ -25,22 +25,42 @@ export async function GET() {
     const techOptions = queryDistinct("tech");
     const techCategoryOptions = queryDistinct("techCategory");
 
+    const db = getDb();
+    const { maxTechsInDomain } = db
+      .prepare(
+        `SELECT MAX(cnt) AS maxTechsInDomain
+         FROM (
+           SELECT COUNT(DISTINCT tech) AS cnt
+           FROM companies
+           WHERE domain IS NOT NULL AND tech IS NOT NULL
+           GROUP BY domain
+         )`,
+      )
+      .get() as { maxTechsInDomain: number };
+
     logger.info(
       `api/get-options route GET() success args={ ` +
         `companyCategoryOptions: ${companyCategoryOptions.length}, ` +
         `countryOptions: ${countryOptions.length}, ` +
         `techOptions: ${techOptions.length}, ` +
-        `techCategoryOptions: ${techCategoryOptions.length} }`,
+        `techCategoryOptions: ${techCategoryOptions.length}, ` +
+        `maxTechsInDomain: ${maxTechsInDomain} }`,
     );
 
     return NextResponse.json({
+      ...(maxTechsInDomain && { maxTechsInDomain: maxTechsInDomain ?? 0 }),
       companyCategoryOptions,
       countryOptions,
       techOptions,
       techCategoryOptions,
     });
   } catch (error) {
-    logger.error(`api/get-options route GET() failed error=${JSON.stringify(error)}`);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    logger.error(
+      `api/get-options route GET() failed error=${JSON.stringify(error)}`,
+    );
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
