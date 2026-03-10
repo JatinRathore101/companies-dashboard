@@ -8,18 +8,19 @@ import MenuIcon from "@mui/icons-material/Menu";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import { useTheme } from "@mui/material/styles";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSidebarOpen } from "@/store/slices/uiSlice";
-import { toggleThemeMode } from "@/store/slices/themeSlice";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "@/store";
+import { uiSliceActions } from "@/store/slices/uiSlice";
+import { themeSliceActions } from "@/store/slices/themeSlice";
 
 export function Header() {
-  const dispatch = useAppDispatch();
+  const dispatch = useDispatch();
   const theme = useTheme();
-  const themeMode = useAppSelector((state) => state.theme?.themeMode ?? "dark");
-  const sidebarOpen = useAppSelector((state) => state.ui?.sidebarOpen ?? true);
+  const themeMode = useSelector((state: RootState) => state.theme?.themeMode ?? "dark");
+  const sidebarOpen = useSelector((state: RootState) => state.ui?.sidebarOpen ?? true);
 
   function handleThemeToggle() {
-    dispatch(toggleThemeMode());
+    dispatch(themeSliceActions.toggleThemeMode());
   }
 
   return (
@@ -38,7 +39,7 @@ export function Header() {
         <IconButton
           edge="start"
           aria-label="toggle sidebar"
-          onClick={() => dispatch(setSidebarOpen(!sidebarOpen))}
+          onClick={() => dispatch(uiSliceActions.setSidebarOpen(!sidebarOpen))}
           sx={{ color: theme.palette.text.primary }}
         >
           <MenuIcon />

@@ -19,5 +19,5 @@ export const uiSlice = createSlice({
   },
 });
 
-export const { setSidebarOpen } = uiSlice.actions;
+export const uiSliceActions = uiSlice.actions;
 export default uiSlice.reducer;

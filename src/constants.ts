@@ -4,6 +4,7 @@ export const APPBAR_HEIGHT = 64;
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 export const ACCORDION_SECTIONS: { id: string; label: string }[] = [
+  { id: "searchStr", label: "Search" },
   { id: "countries", label: "Country" },
   { id: "companyCategories", label: "Company Category" },
   { id: "includedTechList", label: "Allowed Technology" },

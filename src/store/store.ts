@@ -12,6 +12,7 @@ import {
 import uiReducer from "./slices/uiSlice";
 import optionsReducer from "./slices/optionsSlice";
 import themeReducer from "./slices/themeSlice";
+import companiesTableReducer from "./slices/companiesTableSlice";
 import { createLocalStorage, createSessionStorage } from "./storage";
 
 // Theme is persisted in localStorage so it survives across sessions
@@ -24,13 +25,14 @@ const themePersistConfig = {
 const rootPersistConfig = {
   key: "fiber-app-root",
   storage: createSessionStorage(),
-  whitelist: ["ui"],
+  whitelist: ["ui", "options", "companiesTable"],
 };
 
 const rootReducer = combineReducers({
   ui: uiReducer,
   theme: persistReducer(themePersistConfig, themeReducer),
   options: optionsReducer,
+  companiesTable: companiesTableReducer,
 });
 
 export const store = configureStore({

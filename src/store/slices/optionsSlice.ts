@@ -36,5 +36,5 @@ export const optionsSlice = createSlice({
   },
 });
 
-export const { setOptionsData, setOptionsLoading, setOptionsError } = optionsSlice.actions;
+export const optionsSliceActions = optionsSlice.actions;
 export default optionsSlice.reducer;
