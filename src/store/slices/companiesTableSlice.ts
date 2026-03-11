@@ -55,6 +55,10 @@ export const companiesTableSlice = createSlice({
       state.filters = action.payload;
       state.pagination.page = 0;
     },
+    setSearchStr(state, action: PayloadAction<string>) {
+      state.filters.searchStr = action.payload;
+      state.pagination.page = 0;
+    },
     setPage(state, action: PayloadAction<number>) {
       state.pagination.page = action.payload;
     },

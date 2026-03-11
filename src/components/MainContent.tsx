@@ -12,7 +12,9 @@ import { companiesTableSliceActions } from "@/store/slices/companiesTableSlice";
 import type { Filters } from "@/store/slices/companiesTableSlice";
 import DataTableBody from "@/components/table/dataTableBody";
 import type { Column } from "@/components/table/dataTableBody";
-import { APPBAR_HEIGHT, STAT_CARD_COLORS } from "@/constants";
+import { APPBAR_HEIGHT } from "@/constants";
+import CompaniesSearchBar from "./companiesSearchBar";
+import ExportCompaniesCsvModal from "./exportCompaniesCsvModal";
 
 type CompanyRow = {
   domain: string;
@@ -55,15 +57,19 @@ function buildRequestBody(
 
   if (filters.searchStr.trim()) body.searchStr = filters.searchStr.trim();
   if (filters.countries.length) body.countries = filters.countries;
-  if (filters.companyCategories.length) body.companyCategories = filters.companyCategories;
-  if (filters.includedTechList.length) body.includedTechList = filters.includedTechList;
-  if (filters.excludedTechList.length) body.excludedTechList = filters.excludedTechList;
+  if (filters.companyCategories.length)
+    body.companyCategories = filters.companyCategories;
+  if (filters.includedTechList.length)
+    body.includedTechList = filters.includedTechList;
+  if (filters.excludedTechList.length)
+    body.excludedTechList = filters.excludedTechList;
   if (filters.includedTechCategoryList.length)
     body.includedTechCategoryList = filters.includedTechCategoryList;
   if (filters.excludedTechCategoryList.length)
     body.excludedTechCategoryList = filters.excludedTechCategoryList;
-  if (filters.minNumberOfTech > 0) body.minNumberOfTech = filters.minNumberOfTech;
-  if (filters.maxNumberOfTech > 0) body.maxNumberOfTech = filters.maxNumberOfTech;
+  body.minNumberOfTech = filters.minNumberOfTech;
+  if (filters.maxNumberOfTech >= filters.minNumberOfTech)
+    body.maxNumberOfTech = filters.maxNumberOfTech;
 
   return body;
 }
@@ -74,10 +80,15 @@ export function MainContent() {
   const { optionsData, optionsLoading, optionsError } = useSelector(
     (state: RootState) => state.options,
   );
-  const filters = useSelector((state: RootState) => state.companiesTable.filters);
-  const pagination = useSelector((state: RootState) => state.companiesTable.pagination);
+  const filters = useSelector(
+    (state: RootState) => state.companiesTable.filters,
+  );
+  const pagination = useSelector(
+    (state: RootState) => state.companiesTable.pagination,
+  );
 
   const [companiesData, setCompaniesData] = useState<CompanyRow[]>([]);
+  const [companiesDomains, setCompaniesDomains] = useState<string[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
 
@@ -88,6 +99,12 @@ export function MainContent() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       dispatch(optionsSliceActions.setOptionsData(json));
+      dispatch(
+        companiesTableSliceActions.setFilters({
+          ...filters,
+          maxNumberOfTech: json?.maxTechsInDomain,
+        }),
+      );
     } catch (err) {
       dispatch(
         optionsSliceActions.setOptionsError(
@@ -119,7 +136,10 @@ export function MainContent() {
       }
       const json = await res.json();
       setCompaniesData(json.data ?? []);
-      dispatch(companiesTableSliceActions.setTotalRecords(json.totalCount ?? 0));
+      setCompaniesDomains(json.domains ?? []);
+      dispatch(
+        companiesTableSliceActions.setTotalRecords(json.totalCount ?? 0),
+      );
     } catch (err) {
       setCompaniesError(
         err instanceof Error ? err.message : "Failed to fetch companies",
@@ -153,6 +173,11 @@ export function MainContent() {
       }}
     >
       <Box sx={{ height: APPBAR_HEIGHT }} />
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <CompaniesSearchBar />
+        <ExportCompaniesCsvModal domains={companiesDomains} />
+      </Box>
 
       {optionsError && (
         <Alert severity="error" sx={{ mb: 3 }}>

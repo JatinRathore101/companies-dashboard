@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -8,16 +8,17 @@ import Divider from "@mui/material/Divider";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { useTheme } from "@mui/material/styles";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store";
-import { companiesTableSliceActions, type Filters } from "@/store/slices/companiesTableSlice";
+import { companiesTableSliceActions } from "@/store/slices/companiesTableSlice";
 import { SIDEBAR_WIDTH, ACCORDION_SECTIONS } from "@/constants";
+import MultiSelect from "./autocomplete/multiselect";
+import RangeSlider from "./slider/rangeSlider";
+import CustomChip from "./chips/customChip";
 
 interface DraftFilters {
   searchStr: string;
@@ -25,112 +26,170 @@ interface DraftFilters {
   companyCategories: string[];
   includedTechList: string[];
   excludedTechList: string[];
-  minNumberOfTech: string;
-  maxNumberOfTech: string;
+  minNumberOfTech: number;
+  maxNumberOfTech: number;
   includedTechCategoryList: string[];
   excludedTechCategoryList: string[];
-}
-
-function toDraft(filters: Filters): DraftFilters {
-  return {
-    ...filters,
-    minNumberOfTech: filters.minNumberOfTech > 0 ? String(filters.minNumberOfTech) : "",
-    maxNumberOfTech: filters.maxNumberOfTech > 0 ? String(filters.maxNumberOfTech) : "",
-  };
 }
 
 export function Sidebar() {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const sidebarOpen = useSelector((state: RootState) => state.ui?.sidebarOpen ?? true);
-  const filters = useSelector((state: RootState) => state.companiesTable.filters);
-  const optionsData = useSelector((state: RootState) => state.options.optionsData);
+  const sidebarOpen = useSelector(
+    (state: RootState) => state.ui?.sidebarOpen ?? true,
+  );
+  const filters = useSelector(
+    (state: RootState) => state.companiesTable.filters,
+  );
+  const optionsData = useSelector(
+    (state: RootState) => state.options.optionsData,
+  );
 
-  const [draft, setDraft] = useState<DraftFilters>(() => toDraft(filters));
+  const [draft, setDraft] = useState<DraftFilters>(filters);
+
+  useEffect(() => {
+    setDraft(filters);
+  }, [filters]);
 
   const handleApply = () => {
+    console.log(JSON.stringify(draft, null, 2));
     dispatch(
       companiesTableSliceActions.setFilters({
         ...draft,
-        minNumberOfTech: Number(draft.minNumberOfTech) || 0,
-        maxNumberOfTech: Number(draft.maxNumberOfTech) || 0,
+        minNumberOfTech: draft.minNumberOfTech ?? 0,
+        maxNumberOfTech:
+          draft.maxNumberOfTech ?? optionsData?.maxTechsInDomain ?? 0,
       }),
     );
   };
 
-  const multiSelect = (
-    key: keyof Pick<
-      DraftFilters,
-      | "countries"
-      | "companyCategories"
-      | "includedTechList"
-      | "excludedTechList"
-      | "includedTechCategoryList"
-      | "excludedTechCategoryList"
-    >,
-    options: string[],
-  ) => (
-    <Autocomplete
-      multiple
-      size="small"
-      options={options}
-      value={draft[key]}
-      onChange={(_, newValue) => setDraft((prev) => ({ ...prev, [key]: newValue }))}
-      renderInput={(params) => (
-        <TextField {...params} placeholder={options.length ? "Select..." : "Loading..."} />
-      )}
-      sx={{ width: "100%" }}
-    />
-  );
-
   const renderContent = (id: string) => {
     switch (id) {
-      case "searchStr":
-        return (
-          <TextField
-            size="small"
-            fullWidth
-            placeholder="Search companies..."
-            value={draft.searchStr}
-            onChange={(e) => setDraft((prev) => ({ ...prev, searchStr: e.target.value }))}
-          />
-        );
       case "countries":
-        return multiSelect("countries", optionsData?.countryOptions ?? []);
+        return (
+          <MultiSelect
+            value={draft.countries}
+            options={optionsData?.countryOptions ?? []}
+            placeholder="Select countries (e.g., UK, FR etc)"
+            onChange={(value) =>
+              setDraft((prev) => ({ ...prev, countries: value }))
+            }
+          />
+        );
+
       case "companyCategories":
-        return multiSelect("companyCategories", optionsData?.companyCategoryOptions ?? []);
-      case "includedTechList":
-        return multiSelect("includedTechList", optionsData?.techOptions ?? []);
-      case "excludedTechList":
-        return multiSelect("excludedTechList", optionsData?.techOptions ?? []);
-      case "minNumberOfTech":
         return (
-          <TextField
-            size="small"
-            fullWidth
-            type="number"
-            placeholder="0"
-            value={draft.minNumberOfTech}
-            onChange={(e) => setDraft((prev) => ({ ...prev, minNumberOfTech: e.target.value }))}
-            inputProps={{ min: 0 }}
+          <MultiSelect
+            value={draft.companyCategories}
+            options={optionsData?.companyCategoryOptions ?? []}
+            placeholder="Select categories (e.g., Technology And Computing)"
+            onChange={(value) =>
+              setDraft((prev) => ({ ...prev, companyCategories: value }))
+            }
           />
         );
-      case "maxNumberOfTech":
+
+      case "techList":
         return (
-          <TextField
-            size="small"
-            fullWidth
-            type="number"
-            placeholder="0"
-            value={draft.maxNumberOfTech}
-            onChange={(e) => setDraft((prev) => ({ ...prev, maxNumberOfTech: e.target.value }))}
-            inputProps={{ min: 0 }}
-          />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography sx={{ color: theme.palette.text.secondary }}>
+              Any of
+            </Typography>
+            <MultiSelect
+              value={draft.includedTechList}
+              options={optionsData?.techOptions ?? []}
+              placeholder="Select technologies (e.g., JQuery)"
+              onChange={(value) =>
+                setDraft((prev) => ({ ...prev, includedTechList: value }))
+              }
+            />
+            <Typography sx={{ color: theme.palette.text.secondary, mt: 1 }}>
+              None of
+            </Typography>
+            <MultiSelect
+              value={draft.excludedTechList}
+              options={optionsData?.techOptions ?? []}
+              placeholder="Select technologies to exclude..."
+              onChange={(value) =>
+                setDraft((prev) => ({ ...prev, excludedTechList: value }))
+              }
+            />
+          </Box>
         );
-      case "includedTechCategoryList":
-        return multiSelect("includedTechCategoryList", optionsData?.techCategoryOptions ?? []);
-      case "excludedTechCategoryList":
-        return multiSelect("excludedTechCategoryList", optionsData?.techCategoryOptions ?? []);
+
+      case "numberOfTech":
+        return (
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <CustomChip
+                chipValue={draft?.minNumberOfTech ?? 0}
+                chipState="PURPLE"
+              />
+              <CustomChip
+                chipValue={
+                  draft?.maxNumberOfTech ?? optionsData?.maxTechsInDomain ?? 0
+                }
+                chipState="PURPLE"
+              />
+            </Box>
+            <RangeSlider
+              value={[
+                draft?.minNumberOfTech ?? 0,
+                draft?.maxNumberOfTech ?? optionsData?.maxTechsInDomain ?? 0,
+              ]}
+              setValue={(v) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  minNumberOfTech: v?.[0] ?? 0,
+                  maxNumberOfTech: v?.[1] ?? optionsData?.maxTechsInDomain ?? 0,
+                }))
+              }
+              minVal={0}
+              maxVal={optionsData?.maxTechsInDomain}
+            />
+          </Box>
+        );
+
+      case "techCategoryList":
+        return (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography sx={{ color: theme.palette.text.secondary }}>
+              Any of
+            </Typography>
+            <MultiSelect
+              value={draft.includedTechCategoryList}
+              options={optionsData?.techCategoryOptions ?? []}
+              onChange={(value) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  includedTechCategoryList: value,
+                }))
+              }
+              placeholder="Select technology categories (e.g., Advertizing)"
+            />
+            <Typography sx={{ color: theme.palette.text.secondary, mt: 1 }}>
+              None of
+            </Typography>
+            <MultiSelect
+              value={draft.excludedTechCategoryList}
+              options={optionsData?.techCategoryOptions ?? []}
+              onChange={(value) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  excludedTechCategoryList: value,
+                }))
+              }
+              placeholder="Select technology categories to exclude..."
+            />
+          </Box>
+        );
+
       default:
         return null;
     }
@@ -149,7 +208,15 @@ export function Sidebar() {
     >
       <Box sx={{ width: SIDEBAR_WIDTH }}>
         <Toolbar />
-        <Box sx={{ overflow: "auto", py: 1, display: "flex", flexDirection: "column" }}>
+
+        <Box
+          sx={{
+            overflow: "auto",
+            py: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <Box
             sx={{
               color: theme.palette.primary.main,
@@ -160,6 +227,7 @@ export function Sidebar() {
             }}
           >
             <FilterListIcon />
+
             <Typography
               variant="overline"
               sx={{
@@ -191,7 +259,10 @@ export function Sidebar() {
             >
               <AccordionSummary
                 expandIcon={
-                  <ExpandMoreIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
+                  <ExpandMoreIcon
+                    fontSize="small"
+                    sx={{ color: theme.palette.text.secondary }}
+                  />
                 }
                 sx={{
                   px: 2,
@@ -199,18 +270,39 @@ export function Sidebar() {
                   "& .MuiAccordionSummary-content": { my: 0 },
                 }}
               >
-                <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: theme.palette.text.primary,
+                    fontSize: { xs: "15px", md: "17px" },
+                  }}
+                >
                   {label}
                 </Typography>
               </AccordionSummary>
+
               <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
                 {renderContent(id)}
               </AccordionDetails>
             </Accordion>
           ))}
 
-          <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-            <Button variant="contained" fullWidth onClick={handleApply}>
+          <Box
+            sx={{
+              px: 2,
+              pt: 2,
+              pb: 1,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Button
+              sx={{ width: "100px" }}
+              variant="contained"
+              fullWidth
+              onClick={handleApply}
+            >
               Apply
             </Button>
           </Box>

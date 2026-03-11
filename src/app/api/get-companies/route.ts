@@ -391,7 +391,11 @@ export async function POST(req: NextRequest) {
       `api/get-companies route POST() pagination applied skip=${skip} limit=${limit} totalCount=${totalCount} returnedCount=${paginatedData.length}`,
     );
 
-    return NextResponse.json({ totalCount, data: paginatedData });
+    return NextResponse.json({
+      totalCount,
+      domains: data?.map(({ domain }) => domain),
+      data: paginatedData,
+    });
   } catch (error) {
     logger.error(
       `api/get-companies route POST() failed error=${JSON.stringify(error)}`,

@@ -74,7 +74,7 @@ export default function DataTableBody<T = Record<string, unknown>>({
         <Table sx={{ minWidth: 750 }} size={'medium'}>
           <TableHead
             sx={{
-              background: theme.palette.info.light,
+              background: theme.palette.background.paper,
               '& .MuiTableCell-root': {
                 borderBottom: `1px solid ${theme.palette.secondary.dark}`,
               },
