@@ -25,13 +25,13 @@ export function createAppTheme(mode: PaletteMode) {
               light: "#0F0F10",
             },
             success: {
-              main: "#60FDDB",
+              main: "#009D7B",
             },
             error: {
               main: "#FF8884",
             },
             warning: {
-              main: "#FFDD88",
+              main: "#FFAA55",
             },
             info: {
               main: "#40BFF7",

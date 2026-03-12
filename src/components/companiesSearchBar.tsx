@@ -1,16 +1,20 @@
 import React, { useState } from "react";
 import SearchBar from "./searchbar/searchbar";
-import { Box, Button } from "@mui/material";
+import { Button, CircularProgress, useTheme } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { companiesTableSliceActions } from "@/store/slices/companiesTableSlice";
 import { RootState } from "@/store";
+import { FaSearch } from "react-icons/fa";
 
 const CompaniesSearchBar = () => {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const filters = useSelector(
     (state: RootState) => state.companiesTable.filters,
   );
-
+  const fetchDataLoading = useSelector(
+    (state: RootState) => state.companiesTable.fetchDataLoading,
+  );
   const [searchStr, setSearchStr] = useState<string>(filters.searchStr);
   const handleApply = () => {
     dispatch(companiesTableSliceActions.setSearchStr(searchStr?.trim()));
@@ -25,12 +29,27 @@ const CompaniesSearchBar = () => {
         setValue={(v) => setSearchStr(v)}
       />
       <Button
-        sx={{ width: "100px" }}
+        startIcon={
+          fetchDataLoading ? (
+            <CircularProgress
+              size={16}
+              style={{ color: theme.palette.background.default }}
+            />
+          ) : (
+            <FaSearch size={16} />
+          )
+        }
+        sx={{
+          width: "140px",
+          textTransform: "none",
+          background: theme.palette.info.main,
+          fontWeight: 600,
+          color: theme.palette.background.default,
+        }}
         variant="contained"
-        fullWidth
-        onClick={handleApply}
+        {...(!fetchDataLoading && { onClick: handleApply })}
       >
-        Search
+        {fetchDataLoading ? "Searching..." : "Search"}
       </Button>
     </React.Fragment>
   );

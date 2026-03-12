@@ -19,6 +19,8 @@ import { SIDEBAR_WIDTH, ACCORDION_SECTIONS } from "@/constants";
 import MultiSelect from "./autocomplete/multiselect";
 import RangeSlider from "./slider/rangeSlider";
 import CustomChip from "./chips/customChip";
+import { MdOutlineFilterAlt } from "react-icons/md";
+import { CircularProgress } from "@mui/material";
 
 interface DraftFilters {
   searchStr: string;
@@ -40,6 +42,9 @@ export function Sidebar() {
   );
   const filters = useSelector(
     (state: RootState) => state.companiesTable.filters,
+  );
+  const fetchDataLoading = useSelector(
+    (state: RootState) => state.companiesTable.fetchDataLoading,
   );
   const optionsData = useSelector(
     (state: RootState) => state.options.optionsData,
@@ -130,12 +135,14 @@ export function Sidebar() {
               <CustomChip
                 chipValue={draft?.minNumberOfTech ?? 0}
                 chipState="PURPLE"
+                fontSize="14px"
               />
               <CustomChip
                 chipValue={
                   draft?.maxNumberOfTech ?? optionsData?.maxTechsInDomain ?? 0
                 }
                 chipState="PURPLE"
+                fontSize="14px"
               />
             </Box>
             <RangeSlider
@@ -298,12 +305,27 @@ export function Sidebar() {
             }}
           >
             <Button
-              sx={{ width: "100px" }}
+              startIcon={
+                fetchDataLoading ? (
+                  <CircularProgress
+                    size={16}
+                    style={{ color: theme.palette.background.default }}
+                  />
+                ) : (
+                  <MdOutlineFilterAlt size={20} />
+                )
+              }
+              sx={{
+                width: "130px",
+                textTransform: "none",
+                background: theme.palette.info.main,
+                fontWeight: 600,
+                color: theme.palette.background.default,
+              }}
               variant="contained"
-              fullWidth
-              onClick={handleApply}
+              {...(!fetchDataLoading && { onClick: handleApply })}
             >
-              Apply
+              {fetchDataLoading ? "Applying..." : "Apply"}
             </Button>
           </Box>
         </Box>

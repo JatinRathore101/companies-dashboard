@@ -9,6 +9,9 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { RxCross2 } from "react-icons/rx";
+import CustomChip from "./chips/customChip";
+import { MdOutlineFileDownload } from "react-icons/md";
+import { VscExport } from "react-icons/vsc";
 
 type Props = {
   domains: string[];
@@ -75,9 +78,15 @@ const ExportCompaniesCsvModal: React.FC<Props> = ({ domains }) => {
   return (
     <>
       <Button
-        sx={{ width: "150px" }}
+        endIcon={<VscExport size={24} />}
+        sx={{
+          width: "170px",
+          textTransform: "none",
+          background: theme.palette.success.main,
+          fontWeight: 600,
+          color: theme.palette.background.default,
+        }}
         variant="contained"
-        fullWidth
         onClick={() => setOpen(true)}
         disabled={!domains?.length}
       >
@@ -141,17 +150,38 @@ const ExportCompaniesCsvModal: React.FC<Props> = ({ domains }) => {
             }}
           >
             <Typography
-              sx={{ color: theme.palette.text.primary, fontWeight: 500 }}
+              sx={{
+                color: theme.palette.text.primary,
+                fontWeight: 600,
+                fontSize: { xs: "15px", md: "17px" },
+              }}
             >
               Download companies data as CSV
             </Typography>
-            <Typography
-              sx={{ color: theme.palette.text.primary, fontWeight: 500 }}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
             >
-              {`Number of companies - ${domains?.length}`}
-            </Typography>
+              <Typography
+                sx={{
+                  color: theme.palette.text.primary,
+                  fontWeight: 600,
+                  fontSize: { xs: "15px", md: "17px" },
+                }}
+              >
+                {`Number of companies`}
+              </Typography>
+              <CustomChip
+                chipValue={domains?.length}
+                chipState="PURPLE"
+                fontSize="14px"
+              />
+            </Box>
 
-            <Typography sx={{ color: theme.palette.text.secondary }}>
+            <Typography sx={{ color: theme.palette.text.secondary, mt: 8 }}>
               {`Note: The CSV may contain more rows than ${domains?.length} as
               single Company can have multiple technologies resulting in
               multiple rows`}
@@ -168,21 +198,39 @@ const ExportCompaniesCsvModal: React.FC<Props> = ({ domains }) => {
             }}
           >
             <Button
-              sx={{ width: "110px" }}
+              sx={{
+                width: "110px",
+                textTransform: "none",
+                fontWeight: 600,
+                color: theme.palette.text.secondary,
+                border: `1px solid ${theme.palette.text.secondary}70`,
+              }}
               variant="outlined"
-              color="primary"
               onClick={() => setOpen(false)}
             >
               Cancel
             </Button>
 
             <Button
-              sx={{ width: "200px" }}
+              sx={{
+                width: "200px",
+                textTransform: "none",
+                background: theme.palette.info.main,
+                fontWeight: 600,
+                color: theme.palette.background.default,
+              }}
               variant="contained"
               onClick={handleDownload}
               disabled={!domains?.length || loading}
               startIcon={
-                loading ? <CircularProgress size={18} color="inherit" /> : null
+                loading ? (
+                  <CircularProgress
+                    size={16}
+                    style={{ color: theme.palette.background.default }}
+                  />
+                ) : (
+                  <MdOutlineFileDownload size={24} />
+                )
               }
             >
               {loading ? "Downloading..." : "Download as CSV"}

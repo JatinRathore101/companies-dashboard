@@ -10,3 +10,14 @@ export const ACCORDION_SECTIONS: { id: string; label: string }[] = [
   { id: "numberOfTech", label: "Number of Technologies" },
   { id: "techCategoryList", label: "Technology Categories" },
 ];
+
+export const COUNTRY_NAME_MAP: Record<string, string> = {
+  AT: "Austria",
+  CA: "Canada",
+  DE: "Germany",
+  FR: "France",
+  GB: "Great Britain",
+  HK: "Hong Kong",
+  NL: "Netherlands",
+  US: "United States",
+};

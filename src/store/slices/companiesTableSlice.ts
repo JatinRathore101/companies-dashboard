@@ -22,6 +22,7 @@ interface Pagination {
 interface CompaniesTableState {
   filters: Filters;
   pagination: Pagination;
+  fetchDataLoading: boolean;
 }
 
 const initialFilters: Filters = {
@@ -45,6 +46,7 @@ const initialPagination: Pagination = {
 const initialState: CompaniesTableState = {
   filters: initialFilters,
   pagination: initialPagination,
+  fetchDataLoading: false,
 };
 
 export const companiesTableSlice = createSlice({
@@ -67,6 +69,9 @@ export const companiesTableSlice = createSlice({
     },
     setTotalRecords(state, action: PayloadAction<number>) {
       state.pagination.totalRecords = action.payload;
+    },
+    setFetchDataLoading(state, action: PayloadAction<boolean>) {
+      state.fetchDataLoading = action.payload;
     },
   },
 });

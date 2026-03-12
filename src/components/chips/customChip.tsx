@@ -58,9 +58,7 @@ const CustomChip: React.FC<CustomChipProps> = ({
         fontWeight: 700,
       }}
     >
-      {typeof chipValue === "string"
-        ? chipValue.toUpperCase().trim()
-        : chipValue}
+      {typeof chipValue === "string" ? chipValue?.trim() : chipValue}
     </Typography>
   );
 };

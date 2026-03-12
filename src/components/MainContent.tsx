@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import { useTheme } from "@mui/material/styles";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,68 +10,14 @@ import { optionsSliceActions } from "@/store/slices/optionsSlice";
 import { companiesTableSliceActions } from "@/store/slices/companiesTableSlice";
 import type { Filters } from "@/store/slices/companiesTableSlice";
 import DataTableBody from "@/components/table/dataTableBody";
-import type { Column } from "@/components/table/dataTableBody";
 import { APPBAR_HEIGHT } from "@/constants";
 import CompaniesSearchBar from "./companiesSearchBar";
 import ExportCompaniesCsvModal from "./exportCompaniesCsvModal";
-
-type CompanyRow = {
-  domain: string;
-  companyName?: string;
-  companyCategory?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  zipcode?: string;
-  tech?: string[];
-  techCategory?: string[];
-};
-
-const columns: Column<CompanyRow>[] = [
-  { accessor: "domain", Header: "Domain", width: 200 },
-  { accessor: "companyName", Header: "Company Name", width: 180 },
-  { accessor: "companyCategory", Header: "Category", width: 140 },
-  { accessor: "country", Header: "Country", width: 120 },
-  { accessor: "city", Header: "City", width: 120 },
-  {
-    accessor: "tech",
-    Header: "Technologies",
-    Cell: ({ value }) => (
-      <Typography noWrap sx={{ fontSize: "inherit", fontFamily: "Lato" }}>
-        {Array.isArray(value) ? value.join(", ") : String(value ?? "")}
-      </Typography>
-    ),
-  },
-];
-
-function buildRequestBody(
-  filters: Filters,
-  page: number,
-  rowsPerPage: number,
-): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    skip: page * rowsPerPage,
-    limit: rowsPerPage,
-  };
-
-  if (filters.searchStr.trim()) body.searchStr = filters.searchStr.trim();
-  if (filters.countries.length) body.countries = filters.countries;
-  if (filters.companyCategories.length)
-    body.companyCategories = filters.companyCategories;
-  if (filters.includedTechList.length)
-    body.includedTechList = filters.includedTechList;
-  if (filters.excludedTechList.length)
-    body.excludedTechList = filters.excludedTechList;
-  if (filters.includedTechCategoryList.length)
-    body.includedTechCategoryList = filters.includedTechCategoryList;
-  if (filters.excludedTechCategoryList.length)
-    body.excludedTechCategoryList = filters.excludedTechCategoryList;
-  body.minNumberOfTech = filters.minNumberOfTech;
-  if (filters.maxNumberOfTech >= filters.minNumberOfTech)
-    body.maxNumberOfTech = filters.maxNumberOfTech;
-
-  return body;
-}
+import {
+  buildRequestBody,
+  COMPANY_TABLE_COLUMNS,
+  CompanyRow,
+} from "./companyTable.config";
 
 export function MainContent() {
   const dispatch = useDispatch();
@@ -86,10 +31,12 @@ export function MainContent() {
   const pagination = useSelector(
     (state: RootState) => state.companiesTable.pagination,
   );
+  const fetchDataLoading = useSelector(
+    (state: RootState) => state.companiesTable.fetchDataLoading,
+  );
 
   const [companiesData, setCompaniesData] = useState<CompanyRow[]>([]);
   const [companiesDomains, setCompaniesDomains] = useState<string[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
 
   const handleSetOptions = async () => {
@@ -121,7 +68,7 @@ export function MainContent() {
     page: number,
     rowsPerPage: number,
   ) => {
-    setCompaniesLoading(true);
+    dispatch(companiesTableSliceActions.setFetchDataLoading(true));
     setCompaniesError(null);
     try {
       const body = buildRequestBody(currentFilters, page, rowsPerPage);
@@ -145,7 +92,7 @@ export function MainContent() {
         err instanceof Error ? err.message : "Failed to fetch companies",
       );
     } finally {
-      setCompaniesLoading(false);
+      dispatch(companiesTableSliceActions.setFetchDataLoading(false));
     }
   };
 
@@ -193,12 +140,12 @@ export function MainContent() {
           </Alert>
         )}
         <DataTableBody<CompanyRow>
-          columns={columns}
+          columns={COMPANY_TABLE_COLUMNS}
           data={companiesData}
           page={pagination.page}
           rowsPerPage={pagination.rowsPerPage}
           totalRecords={pagination.totalRecords}
-          loading={companiesLoading}
+          loading={fetchDataLoading}
           handlePageChange={(value) =>
             dispatch(companiesTableSliceActions.setPage(value))
           }
