@@ -9,12 +9,19 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import BookmarksIcon from "@mui/icons-material/Bookmarks";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useTheme } from "@mui/material/styles";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store";
 import { companiesTableSliceActions } from "@/store/slices/companiesTableSlice";
+import { savedFiltersSliceActions } from "@/store/slices/savedFiltersSlice";
+import type { Filter } from "@/store/slices/savedFiltersSlice";
 import { SIDEBAR_WIDTH, ACCORDION_SECTIONS } from "@/constants";
 import MultiSelect from "./autocomplete/multiselect";
 import RangeSlider from "./slider/rangeSlider";
@@ -49,12 +56,22 @@ export function Sidebar() {
   const optionsData = useSelector(
     (state: RootState) => state.options.optionsData,
   );
+  const savedFilters = useSelector((state: RootState) => state.savedFilters);
 
   const [draft, setDraft] = useState<DraftFilters>(filters);
 
   useEffect(() => {
     setDraft(filters);
   }, [filters]);
+
+  const handleApplySavedFilter = (filter: Filter) => {
+    const { filterName: _filterName, ...filterValues } = filter;
+    dispatch(companiesTableSliceActions.setFilters(filterValues));
+  };
+
+  const handleDeleteSavedFilter = (filterName: string) => {
+    dispatch(savedFiltersSliceActions.deleteFilter(filterName));
+  };
 
   const handleApply = () => {
     console.log(JSON.stringify(draft, null, 2));
@@ -233,7 +250,7 @@ export function Sidebar() {
               pl: 2,
             }}
           >
-            <FilterListIcon />
+            <FilterListIcon color="info" />
 
             <Typography
               variant="overline"
@@ -328,6 +345,104 @@ export function Sidebar() {
               {fetchDataLoading ? "Applying..." : "Apply"}
             </Button>
           </Box>
+
+          {savedFilters.length > 0 && (
+            <>
+              <Divider sx={{ mt: 1 }} />
+
+              <Box
+                sx={{
+                  color: theme.palette.warning.main,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  pl: 2,
+                  pt: 1,
+                }}
+              >
+                <BookmarksIcon fontSize="small" />
+                <Typography
+                  variant="overline"
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    display: "block",
+                    color: theme.palette.text.secondary,
+                    letterSpacing: 1.2,
+                    fontWeight: 600,
+                    fontSize: { xs: "14px", md: "16px" },
+                  }}
+                >
+                  Saved Filters
+                </Typography>
+              </Box>
+
+              <Divider sx={{ mb: 1 }} />
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  mx: 2,
+                }}
+              >
+                {savedFilters.map((filter) => (
+                  <Box
+                    key={filter.filterName}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: theme.palette.text.primary,
+                        flexGrow: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        mr: 1,
+                      }}
+                    >
+                      {filter.filterName}
+                    </Typography>
+
+                    <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
+                      <Tooltip title="Apply filter">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleApplySavedFilter(filter)}
+                          sx={{ color: theme.palette.info.main }}
+                        >
+                          <FilterAltIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
+                      <Tooltip title="Delete filter">
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            handleDeleteSavedFilter(filter.filterName)
+                          }
+                          sx={{ color: theme.palette.error.main }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </>
+          )}
         </Box>
       </Box>
     </Box>

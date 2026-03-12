@@ -22,6 +22,7 @@ export default function RangeSlider({
   return (
     <Box sx={{ width: 300 }}>
       <Slider
+        color="info"
         value={value}
         onChange={handleChange}
         min={minVal}

@@ -80,7 +80,7 @@ const ExportCompaniesCsvModal: React.FC<Props> = ({ domains }) => {
       <Button
         endIcon={<VscExport size={24} />}
         sx={{
-          width: "170px",
+          width: "200px",
           textTransform: "none",
           background: theme.palette.success.main,
           fontWeight: 600,

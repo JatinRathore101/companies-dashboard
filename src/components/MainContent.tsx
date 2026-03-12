@@ -12,6 +12,7 @@ import type { Filters } from "@/store/slices/companiesTableSlice";
 import DataTableBody from "@/components/table/dataTableBody";
 import { APPBAR_HEIGHT } from "@/constants";
 import CompaniesSearchBar from "./companiesSearchBar";
+import SaveViewModal from "./saveViewModal";
 import ExportCompaniesCsvModal from "./exportCompaniesCsvModal";
 import {
   buildRequestBody,
@@ -123,6 +124,7 @@ export function MainContent() {
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <CompaniesSearchBar />
+        <SaveViewModal />
         <ExportCompaniesCsvModal domains={companiesDomains} />
       </Box>
 

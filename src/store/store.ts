@@ -13,6 +13,7 @@ import uiReducer from "./slices/uiSlice";
 import optionsReducer from "./slices/optionsSlice";
 import themeReducer from "./slices/themeSlice";
 import companiesTableReducer from "./slices/companiesTableSlice";
+import savedFiltersReducer from "./slices/savedFiltersSlice";
 import { createLocalStorage, createSessionStorage } from "./storage";
 
 // Theme is persisted in localStorage so it survives across sessions
@@ -33,6 +34,7 @@ const rootReducer = combineReducers({
   theme: persistReducer(themePersistConfig, themeReducer),
   options: optionsReducer,
   companiesTable: companiesTableReducer,
+  savedFilters: savedFiltersReducer,
 });
 
 export const store = configureStore({
