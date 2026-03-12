@@ -79,12 +79,10 @@ export const COMPANY_TABLE_COLUMNS: Column<CompanyRow>[] = [
     accessor: "companyCategory",
     Header: "Category",
     Cell: ({ value }) =>
-      !value ||
-      !(typeof value === "string") ||
-      (typeof value === "string" &&
-        !["unknown", "null", "undefined", ""]?.includes(
-          value?.toLowerCase()?.trim(),
-        )) ? (
+      typeof value === "string" &&
+      !["unknown", "null", "undefined", ""]?.includes(
+        value?.toLowerCase()?.trim(),
+      ) ? (
         <Typography
           sx={{ fontFamily: "Lato", fontSize: "15px", fontWeight: 600 }}
         >
@@ -133,16 +131,19 @@ export const COMPANY_TABLE_COLUMNS: Column<CompanyRow>[] = [
   {
     accessor: "country",
     Header: "Country",
-    Cell: ({ value }) => (
-      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-        <Typography
-          sx={{ fontFamily: "Lato", fontSize: "15px", fontWeight: 600 }}
-        >
-          {COUNTRY_NAME_MAP[String(value)] ?? "- - - - - - - - - - - -"}
-        </Typography>
-        <FlagIcon code={String(value)} />
-      </Box>
-    ),
+    Cell: ({ value }) =>
+      COUNTRY_NAME_MAP[String(value)] ? (
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <Typography
+            sx={{ fontFamily: "Lato", fontSize: "15px", fontWeight: 600 }}
+          >
+            {COUNTRY_NAME_MAP[String(value)]}
+          </Typography>
+          <FlagIcon code={String(value)} />
+        </Box>
+      ) : (
+        "- - - - - - - - - - - -"
+      ),
   },
   {
     accessor: "address",

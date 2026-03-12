@@ -76,7 +76,7 @@ const SaveViewModal: React.FC = () => {
       <Button
         startIcon={<MdBookmarkAdd size={20} />}
         sx={{
-          width: "170px",
+          minWidth: "170px",
           textTransform: "none",
           background: theme.palette.warning.main,
           fontWeight: 600,
@@ -145,23 +145,34 @@ const SaveViewModal: React.FC = () => {
                 new one.
               </Alert>
             ) : (
-              <TextField
-                fullWidth
-                hiddenLabel
-                placeholder="Enter a unique name for this view"
-                value={filterName}
-                onChange={(e) => {
-                  setFilterName(e.target.value);
-                  setFilterNameError("");
-                }}
-                error={!!filterNameError}
-                helperText={filterNameError}
-                autoFocus
-                size="small"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSave();
-                }}
-              />
+              <>
+                <Typography
+                  sx={{
+                    color: theme.palette.text.primary,
+                    fontWeight: 600,
+                    fontSize: { xs: "15px", md: "17px" },
+                  }}
+                >
+                  Filter Name
+                </Typography>
+                <TextField
+                  fullWidth
+                  hiddenLabel
+                  placeholder="Enter a unique name for this view"
+                  value={filterName}
+                  onChange={(e) => {
+                    setFilterName(e.target.value);
+                    setFilterNameError("");
+                  }}
+                  error={!!filterNameError}
+                  helperText={filterNameError}
+                  autoFocus
+                  size="small"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSave();
+                  }}
+                />
+              </>
             )}
           </Box>
 
@@ -194,7 +205,7 @@ const SaveViewModal: React.FC = () => {
                 sx={{
                   width: "110px",
                   textTransform: "none",
-                  background: theme.palette.warning.main,
+                  background: theme.palette.info.main,
                   fontWeight: 600,
                   color: theme.palette.background.default,
                 }}

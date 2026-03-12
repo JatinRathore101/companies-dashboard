@@ -40,7 +40,7 @@ const CompaniesSearchBar = () => {
           )
         }
         sx={{
-          width: "140px",
+          minWidth: "140px",
           textTransform: "none",
           background: theme.palette.info.main,
           fontWeight: 600,

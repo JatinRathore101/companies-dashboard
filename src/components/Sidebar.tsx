@@ -26,7 +26,7 @@ import { SIDEBAR_WIDTH, ACCORDION_SECTIONS } from "@/constants";
 import MultiSelect from "./autocomplete/multiselect";
 import RangeSlider from "./slider/rangeSlider";
 import CustomChip from "./chips/customChip";
-import { MdOutlineFilterAlt } from "react-icons/md";
+import { MdOutlineFilterAlt, MdOutlineFilterAltOff } from "react-icons/md";
 import { CircularProgress } from "@mui/material";
 
 interface DraftFilters {
@@ -319,8 +319,37 @@ export function Sidebar() {
               pb: 1,
               display: "flex",
               justifyContent: "flex-end",
+              gap: 1,
             }}
           >
+            <Button
+              startIcon={<MdOutlineFilterAltOff size={20} />}
+              sx={{
+                width: "160px",
+                textTransform: "none",
+                fontWeight: 600,
+                color: theme.palette.background.default,
+                background: theme.palette.error.main,
+              }}
+              variant="contained"
+              onClick={() =>
+                dispatch(
+                  companiesTableSliceActions.setFilters({
+                    searchStr: "",
+                    countries: [],
+                    companyCategories: [],
+                    includedTechList: [],
+                    excludedTechList: [],
+                    minNumberOfTech: 0,
+                    maxNumberOfTech: optionsData?.maxTechsInDomain ?? 0,
+                    includedTechCategoryList: [],
+                    excludedTechCategoryList: [],
+                  }),
+                )
+              }
+            >
+              Remove Filters
+            </Button>
             <Button
               startIcon={
                 fetchDataLoading ? (
