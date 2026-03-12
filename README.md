@@ -21,3 +21,7 @@ npm run build
 ```
 
 Then open <http://localhost:3000> to see your site.
+
+## Documentation
+
+- Kindly Refer "/documentation/srs.docx" in this repo
