@@ -10,7 +10,7 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  title: "Fiber AI - Company Intelligence Dashboard",
+  title: "Company Intelligence Dashboard",
 };
 
 export default function RootLayout({

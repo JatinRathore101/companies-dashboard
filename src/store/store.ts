@@ -24,7 +24,7 @@ const themePersistConfig = {
 
 // UI state is persisted in sessionStorage so it resets on tab close
 const rootPersistConfig = {
-  key: "fiber-app-root",
+  key: "app-root",
   storage: createSessionStorage(),
   whitelist: ["ui", "options", "companiesTable"],
 };

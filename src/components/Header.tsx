@@ -48,7 +48,7 @@ export function Header() {
         <Typography
           sx={{ fontSize: { xs: "17px", md: "20px" }, fontWeight: 700 }}
         >
-          Fiber AI
+          
         </Typography>
         <Typography
           sx={{

@@ -1,5 +1,3 @@
-This is Fiber AI's coding challenge.
-
 ## Setup
 
 Make sure you've installed Node.js (version 22+). Then run:
@@ -21,7 +19,3 @@ npm run build
 ```
 
 Then open <http://localhost:3000> to see your site.
-
-## Documentation
-
-- Kindly Refer "/documentation/srs.docx" in this repo
